@@ -1,0 +1,65 @@
+# Check the tree and publish it to GitHub Pages at https://html.viliha.com.
+#
+# **There is no build step, because there is nothing to build.** The repository *is* the site: nineteen
+# HTML pages with a stylesheet and three scripts beside them. `actions/checkout` then
+# `upload-pages-artifact` is the whole deploy.
+#
+# What the check earns is the thing a static tree cannot tell you by opening one page: that every
+# reference resolves and every control names a panel that exists. See `scripts/check-links.mjs`.
+#
+# A pull request runs the check and stops there. `main` deploys.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # So a deploy can be re-run from the Actions tab without an empty commit.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  # Pages authenticates the artifact upload with OIDC rather than a token.
+  id-token: write
+
+# One deploy at a time, and the newest wins. `cancel-in-progress: false` because cancelling a
+# half-finished deploy is how a site ends up serving one page set with another's stylesheet.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # No `npm ci`: this repository has no dependencies, and the check is Node's standard library.
+      - run: npm test
+
+      - if: github.event_name != 'pull_request'
+        uses: actions/configure-pages@v5
+        with:
+          # Creates the Pages site and sets its source to GitHub Actions on the first run. Without it
+          # the step fails with `Get Pages site failed ... Not Found`, because the action only *reads*
+          # the configuration and a repository where nobody opened Settings -> Pages has none.
+          enablement: true
+
+      - if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # The repository root, which is the site. `CNAME` is in it and has to be: Pages re-reads the
+          # custom domain on every deploy, so a build without it drops the domain.
+          path: .
+
+      - id: deploy
+        if: github.event_name != 'pull_request'
+        uses: actions/deploy-pages@v4

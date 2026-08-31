@@ -1,0 +1,13 @@
+{
+  "name": "free-html",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The free VuiAdmin admin dashboard, in plain HTML: nineteen pages, no build step, no framework.",
+  "license": "MIT",
+  "scripts": {
+    "start": "npx --yes serve . --listen 3000",
+    "dev": "npx --yes serve . --listen 3000",
+    "test": "node scripts/check-links.mjs"
+  }
+}
