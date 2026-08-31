@@ -70,6 +70,32 @@ for (const page of pages) {
     problems.push(`${page}: title is "${found}", expected "${expected}"`);
   }
 
+  /**
+   * A page that carries a control must load the script that makes it work.
+   *
+   * Both of these shipped broken. The dashboard's map host was an empty 150px div, because no map
+   * library is part of the HTML edition; and its three tabs carried `role="tab"` with no handler
+   * anywhere, so clicking them did nothing at all. Neither is visible in a screenshot of the page —
+   * one looks like an empty panel and the other like a control nobody happened to click.
+   */
+  if (/data-vui-map/.test(html)) {
+    for (const asset of ["vui-map.js", "vui-map.css"]) {
+      if (!html.includes(asset)) problems.push(`${page}: has a map host but does not load ${asset}`);
+    }
+  }
+  if (/role="tab"/.test(html) && !html.includes("vui-tabs.js")) {
+    problems.push(`${page}: has role="tab" controls but does not load vui-tabs.js`);
+  }
+
+  // Exactly one selected tab per group, or the control paints two actives or none.
+  for (const [, list] of html.matchAll(/<div[^>]*role="tablist"[^>]*>([\s\S]*?)<\/div>\s*(?=<div|<\/div)/g)) {
+    const selected = (list.match(/aria-selected="true"/g) ?? []).length;
+    const tabs = (list.match(/role="tab"/g) ?? []).length;
+    if (tabs && selected !== 1) {
+      problems.push(`${page}: a tablist has ${tabs} tab(s) and ${selected} selected, expected exactly 1`);
+    }
+  }
+
   // Something a search result can tell apart from the other eighteen.
   if (!/name="description"/.test(html)) problems.push(`${page}: has no meta description`);
 

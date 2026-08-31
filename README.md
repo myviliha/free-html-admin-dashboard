@@ -19,6 +19,7 @@ where you need it.
 * `vui.css` — the compiled design system, 156KB, dark mode included
 * `vui.js` — the interactions: sidebar, dropdowns, modals, tabs, theme toggle
 * `vui-charts.js`, `vui-calendar.js`, `vui-datetime.js` — loaded only by the pages that need them
+* `vui-map.js`, `vui-tabs.js` — the dashboard's world map and its segmented control
 * Outfit, self-hosted in `fonts/`
 
 No CDN links, no external requests, nothing phoning home. Open it on a plane.
@@ -103,6 +104,24 @@ on `<html>`, so it needs no JavaScript to *stay* applied — only to toggle.
 
 Modals are the browser's own `<dialog>` element, so focus trapping, `Esc` to close and the backdrop
 come from the platform rather than from us.
+
+Two controls on the dashboard are wired by their own small scripts rather than by `vui.js`, because
+they are the two things a static export cannot carry across on its own:
+
+* **`vui-map.js`** — the customers-by-country map. jsvectormap (MIT) plus its Miller-projection world
+  data plus the init, concatenated in that order: the library is UMD and sets `window.jsVectorMap`, and
+  the map file is not a module at all, it calls `jsVectorMap.addMap()` against that global. Every colour
+  it passes is a `var()`, so the map follows the theme toggle without the script knowing one happened.
+* **`vui-tabs.js`** — the Statistics card's segmented control. The export emits Radix's markup
+  (`role="tab"`, `aria-selected`, `data-state`, which every rule in `vui.css` is keyed on) but not the
+  component that moves those attributes, so the three buttons did nothing when clicked. This moves the
+  selection, keeps one tab stop for the group, and handles arrow keys, Home and End.
+
+  Worth stating plainly: the chart behind those tabs does not change, and the reference behaves the
+  same way — its Alpine control moves a highlight and its `chart-03.js` never reads the value. Our
+  React edition goes further and re-aggregates the twelve months into quarters and years; doing that
+  here needs `statistics-quarterly` and `statistics-annually` entries in `CHART_SPECS` and a reachable
+  ApexCharts handle, both of which live in the design system package rather than in this repository.
 
 ## Where this markup comes from
 
