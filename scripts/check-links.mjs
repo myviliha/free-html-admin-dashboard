@@ -49,6 +49,21 @@ const TITLES = {
   videos: "Videos",
 };
 
+/**
+ * Class names that are hooks rather than utilities, so having no CSS rule is correct.
+ *
+ * `rdp-*` are react-day-picker's semantic names — the calendar's appearance comes from the Tailwind
+ * classes beside them. `group/x` and `peer/x` name a group for a variant to target and emit nothing
+ * themselves. `apexcharts-*` are written by the chart library at runtime.
+ *
+ * **A short list with a reason each**, because an allowlist on a completeness check is exactly where a
+ * real gap goes to look accounted for.
+ */
+const SEMANTIC = /^(?:rdp-|apexcharts-)|^(?:group|peer)\//;
+
+/** Tailwind escapes these in selectors, so the lookup has to escape them the same way. */
+const cssEscape = (token) => token.replace(/[\\.:[\]()/%#,!<>'"&*+~=@^|$?{};]/g, (ch) => "\\" + ch);
+
 /** `404.html` is a copy of the not-found page under the name GitHub Pages serves. */
 const titleKey = (page) => (page === "404.html" ? "error-404" : page.replace(/\.html$/, ""));
 
@@ -103,6 +118,36 @@ for (const page of pages) {
   // repository is not part of.
   if (html.includes("apps/web/free-react")) {
     problems.push(`${page}: still names apps/web/free-react, a path that does not exist here`);
+  }
+
+  /**
+   * **Every class in the markup has a rule in the stylesheets this page links.**
+   *
+   * This is the check that matters most here, and the one whose absence shipped a broken dashboard.
+   * `vui.css` is compiled by the design system package against its own components; these pages are
+   * an export of an *application*, whose markup carries layout classes the component library never
+   * mentions. Tailwind emits only what it can see, so 110 classes had no rule at all — including
+   * `grid-cols-12` and `xl:col-span-7`, which is why the dashboard's twelve-column grid collapsed
+   * into full-width rows and Monthly Target dropped below the fold.
+   *
+   * Nothing about that is visible in the HTML, and a screenshot of the page just looks like a design
+   * decision. Holding the markup against the CSS is the only way to see it.
+   */
+  const sheets = [...html.matchAll(/<link[^>]*rel="stylesheet"[^>]*href="([^"]+)"/g)].map((m) => m[1]);
+  const styles = sheets
+    .filter((h) => existsSync(join(root, h)))
+    .map((h) => readFileSync(join(root, h), "utf8"))
+    .join("\n");
+  const classes = new Set();
+  for (const [, list] of html.matchAll(/class="([^"]*)"/g)) {
+    for (const token of list.split(/\s+/)) if (token) classes.add(token);
+  }
+  const orphans = [...classes].filter((c) => !SEMANTIC.test(c) && !styles.includes("." + cssEscape(c)));
+  if (orphans.length) {
+    problems.push(
+      `${page}: ${orphans.length} class(es) with no rule in the linked stylesheets — ` +
+        orphans.slice(0, 6).join(", ") + (orphans.length > 6 ? ", …" : ""),
+    );
   }
 
   // Every local href and src resolves to a file that is actually here.

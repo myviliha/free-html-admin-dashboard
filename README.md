@@ -17,6 +17,7 @@ where you need it.
 
 * Plain HTML5 — 19 pages
 * `vui.css` — the compiled design system, 156KB, dark mode included
+* `vui-pages.css` — the utilities the page markup needs and the package build never saw
 * `vui.js` — the interactions: sidebar, dropdowns, modals, tabs, theme toggle
 * `vui-charts.js`, `vui-calendar.js`, `vui-datetime.js` — loaded only by the pages that need them
 * `vui-map.js`, `vui-tabs.js` — the dashboard's world map and its segmented control
@@ -135,6 +136,14 @@ contributing a design change upstream, it belongs in the design system, not here
 regeneration will overwrite it.
 
 ## Customising
+
+**Two stylesheets, and the second one exists for a reason worth knowing.** `vui.css` is compiled by
+the design system package against its own components. These pages are an export of an *application*,
+and application markup carries layout classes a component library never mentions — the dashboard's
+`grid-cols-12` and `xl:col-span-7`, the metric figure's `text-[30px]`, the search field's `pl-12`.
+Tailwind emits only what it can see, so 110 classes had no rule at all and the dashboard's grid
+collapsed into full-width rows. `vui-pages.css` is exactly that shortfall, generated against the same
+tokens, and `npm test` now holds every class in the markup against the stylesheets each page links.
 
 **`vui.css` is compiled and minified onto one line — do not edit it.** Override instead. Every colour,
 radius and spacing value in it is a CSS custom property on `:root` (and again on `.dark`), so a
