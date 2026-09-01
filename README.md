@@ -142,6 +142,18 @@ Pro is optional and additive: net-new work, not a fence around what is here.
 Requires nothing. There is no build step and no dependency to install.
 
 ```bash
+npx @viliha/free-admin-dashboard my-app --html
+cd my-app
+pnpm start
+```
+
+That fetches this edition, installs it, and leaves you a project of your own rather than a copy of this repository. It works with pnpm, npm, yarn and bun: pnpm is the default, and `--npm`, `--yarn` or `--bun` picks another.
+
+Then open [http://localhost:3000](http://localhost:3000).
+
+Prefer to clone the repository, history and all?
+
+```bash
 git clone git@github.com:myviliha/free-html-admin-dashboard.git
 cd free-html-admin-dashboard
 npm start        # or just open index.html
